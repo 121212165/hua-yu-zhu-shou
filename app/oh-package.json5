@@ -1,0 +1,10 @@
+{
+  "name": "flower-app",
+  "version": "1.0.0",
+  "description": "花语助手 - 智能花束推荐应用",
+  "main": "",
+  "author": "",
+  "license": "",
+  "dependencies": {
+  }
+}

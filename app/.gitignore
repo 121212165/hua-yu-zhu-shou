@@ -1,0 +1,18 @@
+# HarmonyOS build outputs
+/build/
+/.cxx/
+/.gradle/
+/node_modules/
+/oh_modules/
+/.hvigor/
+
+# IDE
+/.idea/
+*.iml
+.DS_Store
+
+# Signing configs
+/signing/
+
+# Logs
+*.log
