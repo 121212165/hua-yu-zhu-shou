@@ -1,0 +1,68 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "花语助手主模块"
+    },
+    {
+      "name": "entry_desc",
+      "value": "花语助手入口Ability"
+    },
+    {
+      "name": "entry_label",
+      "value": "花语助手"
+    },
+    {
+      "name": "tab_home",
+      "value": "首页"
+    },
+    {
+      "name": "tab_recommend",
+      "value": "推荐"
+    },
+    {
+      "name": "tab_library",
+      "value": "花材库"
+    },
+    {
+      "name": "tab_mine",
+      "value": "我的"
+    },
+    {
+      "name": "search_hint",
+      "value": "搜索花材或场景..."
+    },
+    {
+      "name": "scene_birthday",
+      "value": "生日"
+    },
+    {
+      "name": "scene_confession",
+      "value": "表白"
+    },
+    {
+      "name": "scene_anniversary",
+      "value": "纪念日"
+    },
+    {
+      "name": "scene_apology",
+      "value": "道歉"
+    },
+    {
+      "name": "scene_gratitude",
+      "value": "感谢"
+    },
+    {
+      "name": "scene_visit",
+      "value": "探望"
+    },
+    {
+      "name": "hot_recommend",
+      "value": "热门推荐"
+    },
+    {
+      "name": "season_recommend",
+      "value": "当季推荐"
+    }
+  ]
+}

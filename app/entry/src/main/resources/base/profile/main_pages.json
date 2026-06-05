@@ -1,0 +1,17 @@
+{
+  "src": [
+    "pages/Index",
+    "pages/HomePage",
+    "pages/RecommendPage",
+    "pages/FlowerLibrary",
+    "pages/MinePage",
+    "pages/ResultPage",
+    "pages/RecipientProfile",
+    "pages/LoginPage",
+    "pages/CartPage",
+    "pages/OrderConfirmPage",
+    "pages/PaymentPage",
+    "pages/OrderListPage",
+    "pages/OrderDetailPage"
+  ]
+}
