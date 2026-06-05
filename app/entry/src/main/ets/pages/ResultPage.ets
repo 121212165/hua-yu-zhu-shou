@@ -7,6 +7,7 @@ import { ApiService } from '../services/ApiService';
 import { CartStore } from '../store/CartStore';
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
+import pasteboard from '@ohos.pasteboard';
 
 @Entry
 @Component
@@ -152,9 +153,16 @@ export struct ResultPage {
 
   // 复制贺卡文案
   private copyGreetingText(text: string): void {
-    // 在实际项目中使用剪贴板API
-    this.copyTip = '已复制到剪贴板';
-    setTimeout(() => { this.copyTip = ''; }, 2000);
+    const pasteboardData = pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, text);
+    const systemPasteboard = pasteboard.getSystemPasteboard();
+    systemPasteboard.setData(pasteboardData).then(() => {
+      this.copyTip = '已复制到剪贴板';
+      promptAction.showToast({ message: '已复制到剪贴板', duration: 1500 });
+      setTimeout(() => { this.copyTip = ''; }, 2000);
+    }).catch((error: Error) => {
+      console.error('复制失败:', JSON.stringify(error));
+      promptAction.showToast({ message: '复制失败', duration: 1500 });
+    });
   }
 
   // 生成贺卡文案

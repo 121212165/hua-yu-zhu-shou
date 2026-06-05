@@ -5,12 +5,13 @@ import { UserInfo } from '../models/UserModel';
 import { ApiService } from '../services/ApiService';
 import { HttpUtil } from '../services/HttpUtil';
 import router from '@ohos.router';
+import promptAction from '@ohos.promptAction';
 
 // 菜单项数据结构
 interface MenuItem {
   icon: string;
   title: string;
-  route?: string;
+  route: string;
 }
 
 @Entry
@@ -28,11 +29,11 @@ struct MinePage {
   // 功能菜单列表
   private menuItems: MenuItem[] = [
     { icon: '📦', title: '我的订单', route: 'pages/OrderListPage' },
-    { icon: '⭐', title: '收藏的方案' },
-    { icon: '📅', title: '送花日历提醒' },
+    { icon: '⭐', title: '收藏的方案', route: 'pages/ResultPage' },
+    { icon: '📅', title: '送花日历提醒', route: 'pages/RecommendPage' },
     { icon: '👥', title: '收花人档案', route: 'pages/RecipientProfile' },
-    { icon: '🔔', title: '消息通知' },
-    { icon: '⚙️', title: '设置' }
+    { icon: '🔔', title: '消息通知', route: 'pages/OrderListPage' },
+    { icon: '⚙️', title: '设置', route: 'pages/MinePage' }
   ];
 
   // 检查登录状态
@@ -52,22 +53,36 @@ struct MinePage {
   // 加载用户信息
   private async loadUserInfo(): Promise<void> {
     try {
-      // 目前API没有获取当前用户信息接口，使用模拟数据
+      // 后端返回 snake_case 字段，前端模型用 camelCase
+      const profile = await ApiService.getProfile() as Record<string, Object>;
       this.userInfo = {
-        id: 1,
-        username: 'flower_lover',
-        nickname: '花语爱好者',
-        avatarUrl: '',
-        phone: '138****8888',
-        email: 'flower@example.com',
-        createdAt: '2025-01-01',
-        updatedAt: '2025-05-01'
+        id: profile['id'] as number,
+        username: (profile['phone'] as string) || '',
+        nickname: (profile['nickname'] as string) || '花语爱好者',
+        avatarUrl: (profile['avatar'] as string) || '',
+        phone: (profile['phone'] as string) || '',
+        email: '',
+        createdAt: (profile['created_at'] as string) || '',
+        updatedAt: (profile['updated_at'] as string) || ''
       };
-      this.flowerCount = 12;
-      this.recipientCount = 4;
-      this.favoriteCount = 8;
+      // 加载统计数据
+      try {
+        const recipients = await ApiService.getRecipients();
+        this.recipientCount = recipients.length;
+      } catch (e) {
+        this.recipientCount = 0;
+      }
+      try {
+        const orders = await ApiService.getOrders(1, 100);
+        this.flowerCount = orders.total || 0;
+      } catch (e) {
+        this.flowerCount = 0;
+      }
+      this.favoriteCount = 0;
     } catch (error) {
       console.error('加载用户信息失败:', JSON.stringify(error));
+      this.isLoggedIn = false;
+      await HttpUtil.clearToken();
     }
   }
 
@@ -95,13 +110,32 @@ struct MinePage {
 
   // 点击菜单项
   private onMenuItemClick(item: MenuItem): void {
-    if (item.route) {
-      router.pushUrl({ url: item.route }).catch((error: Error) => {
-        console.error(`跳转失败: ${item.route}`, JSON.stringify(error));
-      });
-    } else {
-      console.info(`点击: ${item.title}`);
-    }
+    router.pushUrl({ url: item.route }).catch((error: Error) => {
+      console.error(`跳转失败: ${item.route}`, JSON.stringify(error));
+    });
+  }
+
+  // 编辑资料
+  private editProfile(): void {
+    promptAction.showDialog({
+      title: '修改昵称',
+      message: '请输入新昵称',
+      buttons: [
+        { text: '取消', color: '#999999' },
+        { text: '确认', color: AppTheme.PRIMARY_COLOR }
+      ]
+    }).then((result: promptAction.ShowDialogSuccessResponse) => {
+      if (result.index === 1) {
+        // 用户点确认
+        const newNickname = this.userInfo?.nickname || '';
+        ApiService.updateProfile({ nickname: newNickname }).then(() => {
+          promptAction.showToast({ message: '修改成功', duration: 1500 });
+          this.loadUserInfo();
+        }).catch((error: Error) => {
+          promptAction.showToast({ message: '修改失败', duration: 1500 });
+        });
+      }
+    });
   }
 
   aboutToAppear() {
@@ -157,7 +191,7 @@ struct MinePage {
                 .borderRadius(AppTheme.BORDER_RADIUS_CIRCLE)
                 .border({ width: 1, color: AppTheme.PRIMARY_COLOR, style: BorderStyle.Solid })
                 .onClick(() => {
-                  console.info('编辑资料');
+                  this.editProfile();
                 })
             }
             .width('100%')

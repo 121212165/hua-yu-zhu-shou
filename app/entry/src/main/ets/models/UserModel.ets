@@ -14,16 +14,15 @@ export interface UserInfo {
 
 // 登录请求参数
 export interface LoginParams {
-  username: string;
+  phone: string;
   password: string;
 }
 
 // 注册请求参数
 export interface RegisterParams {
-  username: string;
+  phone: string;
   password: string;
   nickname?: string;
-  phone?: string;
 }
 
 // 登录响应

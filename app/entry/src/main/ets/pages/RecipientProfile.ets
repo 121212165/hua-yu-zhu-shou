@@ -4,6 +4,7 @@ import { AppTheme } from '../common/Theme';
 import { CommonButton, CustomButtonType, ButtonSize } from '../components/CommonButton';
 import { RecipientInfo, CreateRecipientParams } from '../models/UserModel';
 import { ApiService } from '../services/ApiService';
+import promptAction from '@ohos.promptAction';
 
 // 关系类型选项
 const RELATIONSHIP_OPTIONS: string[] = ['伴侣', '朋友', '父母', '子女', '同事', '领导', '其他'];
@@ -64,15 +65,32 @@ struct RecipientProfile {
 
   // 送花记录（模拟数据）
   @State flowerRecords: FlowerRecord[] = [];
+  // 待删除的收花人ID
+  @State pendingDeleteId: number = -1;
 
   // 获取收花人列表
   private async loadRecipients(): Promise<void> {
     this.isLoading = true;
     try {
-      this.recipientList = await ApiService.getRecipients();
+      const rawList = await ApiService.getRecipients();
+      // 后端返回 snake_case，前端模型用 camelCase，需要映射
+      this.recipientList = rawList.map((item: RecipientInfo) => {
+        const raw = item as Record<string, Object>;
+        return {
+          id: raw['id'] as number,
+          userId: (raw['user_id'] as number) || 0,
+          name: raw['name'] as string,
+          gender: (raw['gender'] as string) || 'female',
+          ageRange: raw['age'] ? String(raw['age']) : '',
+          relationship: raw['relationship'] as string,
+          personality: (raw['personality'] as string) || '',
+          preferences: (raw['interests'] as string) || (raw['color_preference'] as string) || '',
+          createdAt: (raw['created_at'] as string) || '',
+          updatedAt: (raw['updated_at'] as string) || ''
+        } as RecipientInfo;
+      });
     } catch (error) {
       console.error('加载收花人列表失败:', JSON.stringify(error));
-      // 使用模拟数据
       this.recipientList = this.getMockRecipients();
     }
     this.isLoading = false;
@@ -141,25 +159,34 @@ struct RecipientProfile {
 
     this.isLoading = true;
     try {
-      const params: CreateRecipientParams = {
+      // 构建符合后端接口的参数（snake_case 字段名）
+      const ageNum = this.formAge ? parseInt(this.formAge.split('-')[0]) || 0 : 0;
+      const params = {
         name: this.formName,
-        gender: this.formGender as 'male' | 'female' | 'other',
-        ageRange: this.formAge,
+        gender: this.formGender,
+        age: ageNum || undefined,
         relationship: this.formRelationship,
-        personality: this.formPersonality.join('、'),
-        preferences: this.formLikedColors.join('、') + (this.formStyle ? '；风格:' + this.formStyle : '') + (this.formAllergies.length > 0 ? '；过敏:' + this.formAllergies.join('、') : '')
+        personality: this.formPersonality.length > 0 ? this.formPersonality.join('、') : undefined,
+        interests: this.formHobbies.length > 0 ? this.formHobbies.join('、') : undefined,
+        career: this.formOccupation || undefined,
+        color_preference: this.formLikedColors.length > 0 ? this.formLikedColors.join('、') : undefined,
+        style_preference: this.formStyle || undefined,
+        allergies: this.formAllergies.length > 0 ? this.formAllergies.join('、') : undefined,
+        notes: this.formNotes || undefined
       };
 
       if (this.isEditing) {
-        // 编辑已有收花人 - 目前API无update，模拟
-        console.info('编辑收花人:', JSON.stringify(params));
+        await ApiService.updateRecipient(this.editingId, params as CreateRecipientParams);
+        promptAction.showToast({ message: '修改成功', duration: 1500 });
       } else {
-        await ApiService.createRecipient(params);
+        await ApiService.createRecipient(params as CreateRecipientParams);
+        promptAction.showToast({ message: '创建成功', duration: 1500 });
       }
       this.showForm = false;
       this.loadRecipients();
     } catch (error) {
       console.error('保存收花人失败:', JSON.stringify(error));
+      promptAction.showToast({ message: '保存失败', duration: 1500 });
       this.showForm = false;
     }
     this.isLoading = false;
@@ -341,7 +368,17 @@ struct RecipientProfile {
           }
           .swipeAction({ end: {
             builder: () => {
-              this.DeleteButtonBuilder()
+              Button('删除')
+                .width(70)
+                .height('100%')
+                .fontSize(AppTheme.FONT_SIZE_NORMAL)
+                .fontColor('#FFFFFF')
+                .backgroundColor(AppTheme.ERROR_COLOR)
+                .borderRadius(0)
+                .onClick(() => {
+                  this.pendingDeleteId = recipient.id;
+                  this.deleteRecipient();
+                })
             }
           }})
         }, (recipient: RecipientInfo) => `${recipient.id}`)
@@ -354,19 +391,18 @@ struct RecipientProfile {
     }
   }
 
-  // 滑动删除按钮
-  @Builder
-  DeleteButtonBuilder() {
-    Button('删除')
-      .width(70)
-      .height('100%')
-      .fontSize(AppTheme.FONT_SIZE_NORMAL)
-      .fontColor('#FFFFFF')
-      .backgroundColor(AppTheme.ERROR_COLOR)
-      .borderRadius(0)
-      .onClick(() => {
-        console.info('删除收花人');
-      })
+  // 删除收花人
+  private async deleteRecipient(): Promise<void> {
+    if (this.pendingDeleteId <= 0) return;
+    try {
+      await ApiService.deleteRecipient(this.pendingDeleteId);
+      promptAction.showToast({ message: '删除成功', duration: 1500 });
+      this.recipientList = this.recipientList.filter((r: RecipientInfo) => r.id !== this.pendingDeleteId);
+      this.pendingDeleteId = -1;
+    } catch (error) {
+      console.error('删除收花人失败:', JSON.stringify(error));
+      promptAction.showToast({ message: '删除失败', duration: 1500 });
+    }
   }
 
   // ====== 新建/编辑档案表单构建 ======
@@ -800,7 +836,7 @@ struct RecipientProfile {
               type: CustomButtonType.OUTLINE,
               size: ButtonSize.MEDIUM,
               onClick: () => {
-                console.info('添加送花记录');
+                promptAction.showToast({ message: '送花记录将在下单后自动生成', duration: 2000 });
               }
             })
             .margin({ top: AppTheme.SPACING_MEDIUM, bottom: AppTheme.SPACING_XLARGE })

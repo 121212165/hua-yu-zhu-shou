@@ -1,7 +1,7 @@
 // API接口定义 - 所有后端API接口
 
 import { HttpUtil } from './HttpUtil';
-import { LoginParams, LoginResponse, RegisterParams, RegisterResponse, RecipientInfo, CreateRecipientParams } from '../models/UserModel';
+import { LoginParams, LoginResponse, RegisterParams, RegisterResponse, RecipientInfo, CreateRecipientParams, UserInfo } from '../models/UserModel';
 import { FlowerInfo, GetFlowersParams, GetFlowersResponse } from '../models/FlowerModel';
 import { GenerateRecommendationParams, RecommendationResponse, CreateOrderParams, OrderInfo, OrderListResponse, UpdateOrderStatusParams, SubmitFeedbackParams, FeedbackInfo } from '../models/RecommendModel';
 
@@ -11,7 +11,6 @@ export class ApiService {
   // 登录
   static async login(params: LoginParams): Promise<LoginResponse> {
     const response = await HttpUtil.post<LoginResponse>('/auth/login', params);
-    // 登录成功后保存Token
     if (response.data.token) {
       await HttpUtil.saveToken(response.data.token);
     }
@@ -21,10 +20,21 @@ export class ApiService {
   // 注册
   static async register(params: RegisterParams): Promise<RegisterResponse> {
     const response = await HttpUtil.post<RegisterResponse>('/auth/register', params);
-    // 注册成功后保存Token
     if (response.data.token) {
       await HttpUtil.saveToken(response.data.token);
     }
+    return response.data;
+  }
+
+  // 获取当前用户信息
+  static async getProfile(): Promise<UserInfo> {
+    const response = await HttpUtil.get<UserInfo>('/auth/profile', undefined, true);
+    return response.data;
+  }
+
+  // 更新用户信息
+  static async updateProfile(params: { nickname?: string; avatar?: string }): Promise<UserInfo> {
+    const response = await HttpUtil.put<UserInfo>('/auth/profile', params, true);
     return response.data;
   }
 
@@ -40,8 +50,30 @@ export class ApiService {
       if (params.page) queryParams['page'] = params.page;
       if (params.pageSize) queryParams['pageSize'] = params.pageSize;
     }
-    const response = await HttpUtil.get<GetFlowersResponse>('/flowers', queryParams);
-    return response.data;
+    const response = await HttpUtil.get<Record<string, Object>>('/flowers', queryParams);
+    // 后端返回 { items, pagination }，映射为前端期望的 { flowers, total, page, pageSize }
+    const raw = response.data as Record<string, Object>;
+    const pagination = raw['pagination'] as Record<string, number> || {};
+    const items = (raw['items'] as Array<Record<string, Object>> || []).map((item: Record<string, Object>) => ({
+      id: item['id'] as number,
+      name: item['name'] as string,
+      category: (item['category'] as string) || 'other',
+      color: (item['color'] as string) || 'mixed',
+      description: (item['description'] as string) || '',
+      meaning: (item['meaning'] as string) || '',
+      price: (item['price_per_stem'] as number) || 0,
+      season: (item['season'] as string) || '全年',
+      imageUrl: (item['image_url'] as string) || '',
+      popularity: 80,
+      createdAt: '',
+      updatedAt: ''
+    }));
+    return {
+      flowers: items as FlowerInfo[],
+      total: (pagination['total'] as number) || 0,
+      page: (pagination['page'] as number) || 1,
+      pageSize: (pagination['pageSize'] as number) || 20
+    };
   }
 
   // 获取花材详情
@@ -62,6 +94,17 @@ export class ApiService {
   static async createRecipient(params: CreateRecipientParams): Promise<RecipientInfo> {
     const response = await HttpUtil.post<RecipientInfo>('/recipients', params, true);
     return response.data;
+  }
+
+  // 更新收件人
+  static async updateRecipient(id: number, params: CreateRecipientParams): Promise<RecipientInfo> {
+    const response = await HttpUtil.put<RecipientInfo>(`/recipients/${id}`, params, true);
+    return response.data;
+  }
+
+  // 删除收件人
+  static async deleteRecipient(id: number): Promise<void> {
+    await HttpUtil.delete<void>(`/recipients/${id}`, true);
   }
 
   // ==================== 推荐相关 ====================

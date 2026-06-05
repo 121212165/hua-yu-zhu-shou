@@ -98,7 +98,7 @@ export class HttpUtil {
       // 处理响应
       if (response.responseCode === 200 || response.responseCode === 201) {
         const result: ApiResponse<T> = JSON.parse(response.result as string);
-        if (result.code === 0 || result.code === 200) {
+        if (result.code === 0 || result.code === 200 || result.code === 201) {
           return result;
         } else {
           throw new Error(`业务错误: ${result.message}`);
