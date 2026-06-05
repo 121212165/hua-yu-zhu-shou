@@ -37,7 +37,7 @@ struct LoginPage {
     this.isLoading = true;
     try {
       const response = await ApiService.login({
-        username: this.loginPhone,
+        phone: this.loginPhone,
         password: this.loginPassword
       });
       // 登录成功，存储token
@@ -48,9 +48,6 @@ struct LoginPage {
       router.back();
     } catch (error) {
       console.error('登录失败:', JSON.stringify(error));
-      // 模拟登录成功
-      AppStorage.setOrCreate('auth_token', 'mock_token_' + Date.now());
-      router.back();
     }
     this.isLoading = false;
   }
@@ -68,9 +65,9 @@ struct LoginPage {
     this.isLoading = true;
     try {
       const response = await ApiService.register({
-        username: this.registerPhone,
+        phone: this.registerPhone,
         password: this.registerPassword,
-        phone: this.registerPhone
+        nickname: '花语用户'
       });
       // 注册成功，存储token
       if (response.token) {
@@ -80,9 +77,6 @@ struct LoginPage {
       router.back();
     } catch (error) {
       console.error('注册失败:', JSON.stringify(error));
-      // 模拟注册成功
-      AppStorage.setOrCreate('auth_token', 'mock_token_' + Date.now());
-      router.back();
     }
     this.isLoading = false;
   }

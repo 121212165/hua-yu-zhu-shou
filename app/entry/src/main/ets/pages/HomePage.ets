@@ -140,7 +140,10 @@ export struct HomePage {
           .fontSize(20)
           .margin({ left: AppTheme.SPACING_SMALL })
           .onClick(() => {
-            console.info(`搜索: ${this.searchKeyword}`);
+            if (this.searchKeyword.trim()) {
+              AppStorage.setOrCreate('searchKeyword', this.searchKeyword.trim());
+              AppStorage.setOrCreate('currentTab', 2);
+            }
           })
       }
       .width('100%')
