@@ -1,0 +1,146 @@
+name: HuaYuZhuShou CI/CD
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # ============================================================
+  # 1. HarmonyOS App 代码检查
+  # ============================================================
+  app-check:
+    name: '📱 App 代码检查'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 验证项目结构
+        run: |
+          echo "=== 验证 HarmonyOS App 结构 ==="
+          for f in "build-profile.json5" "oh-package.json5"; do
+            if [ -f "$f" ]; then echo "  ✅ $f"; else echo "  ❌ $f 缺失"; fi
+          done
+          if [ -f "entry/src/main/module.json5" ]; then echo "  ✅ entry module"; else echo "  ❌ entry module 缺失"; fi
+
+      - name: 代码文件统计
+        run: |
+          echo "=== .ets 文件统计 ==="
+          find . -name "*.ets" -type f | sort
+          echo ""
+          ets_count=$(find . -name "*.ets" | wc -l)
+          line_count=$(find . -name "*.ets" -exec cat {} + 2>/dev/null | wc -l)
+          echo "总计 .ets 文件: $ets_count"
+          echo "总代码行数: $line_count"
+
+      - name: 代码基础检查
+        run: |
+          echo "=== .ets 文件基础检查 ==="
+          find . -name "*.ets" -type f | while read f; do
+            lines=$(wc -l < "$f")
+            echo "  $f: $lines lines"
+          done
+          echo "✅ App 检查完成"
+
+  # ============================================================
+  # 2. Backend CI (Node.js/Express/TypeScript)
+  # ============================================================
+  backend-ci:
+    name: '🖥️ Backend CI'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: TypeScript 编译检查
+        run: npx tsc --noEmit
+
+      - name: 构建
+        run: npm run build
+
+      - name: 验证构建产物
+        run: |
+          if [ -d "dist" ]; then
+            echo "✅ 构建产物 dist/ 已生成"
+            ls -la dist/
+          else
+            echo "❌ 构建产物 dist/ 未生成"
+            exit 1
+          fi
+
+  # ============================================================
+  # 3. 发布
+  # ============================================================
+  release:
+    name: '🚀 发布'
+    needs: [app-check, backend-ci]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 生成版本号
+        id: version
+        run: |
+          DATE=$(date +'%Y%m%d')
+          COUNT=$(git rev-list --count HEAD)
+          echo "version=v1.0.${COUNT}-${DATE}" >> $GITHUB_OUTPUT
+          echo "tag=v1.0.${COUNT}" >> $GITHUB_OUTPUT
+
+      - name: 生成变更日志
+        run: |
+          echo "# HuaYuZhuShou ${{ steps.version.outputs.version }}" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## 模块" >> CHANGELOG.md
+          echo "- 📱 App: HarmonyOS 鸿蒙应用" >> CHANGELOG.md
+          echo "- 🖥️ Backend: Node.js + Express + TypeScript" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## 统计" >> CHANGELOG.md
+          echo "- .ets 文件: $(find app -name '*.ets' 2>/dev/null | wc -l) 个" >> CHANGELOG.md
+          echo "- .ts 文件: $(find backend/src -name '*.ts' 2>/dev/null | wc -l) 个" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          echo "## 提交历史" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          git log --oneline -20 >> CHANGELOG.md
+
+      - name: 创建 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.version }}
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
