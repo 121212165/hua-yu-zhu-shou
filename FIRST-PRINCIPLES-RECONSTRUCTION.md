@@ -1,29 +1,24 @@
 # First-Principles Reconstruction: hua-yu-zhu-shou
 
-> Applied Elon Musk's first-principles thinking: break to fundamental truths, rebuild from zero.
+> Applied Elon Musk's first-principles thinking.
 
 ## Core Problem
 
-People who know nothing about flowers need help choosing the right bouquet.
+People who know nothing about flowers need help choosing the right bouquet fast.
 
-## First Principles Breakdown
+## 10 Over-Engineering Points
 
-1. The user doesn't know flower language. The AI recommendation IS the product.
-2. Context determines the recommendation.
-3. The user wants to act, not browse.
+1. 5-step wizard with ~30 fields (3 fields suffice)
+2. Redis caching (237 lines) for $0.001 API calls
+3. Multi-strategy JSON parser (120+ lines) — fix the prompt
+4. Dual-state cart (162 lines) — users buy one bouquet
+5. 6-state order machine (254 lines) — managing fake orders
+6. 13-field recipient profile — AI needs name + relationship + notes
+7. 3-tier rate limiting for zero users
+8. Frontend mock data fallbacks masking real failures
+9. Bouquet templates table — unused by AI flow
+10. Feedback table — collected, never acted on
 
-## Essential Features
+## Musk's Razor
 
-| Priority | Feature |
-|----------|---------|
-| P0 | AI recommendation from occasion + relationship + budget |
-| P0 | Show 3 bouquet options |
-| P0 | Place order |
-
-## Reconstruction Blueprint
-
-Backend: ~400 lines (from ~2,000). Frontend: ~800 lines (from ~4,000+). Total: ~1,200 lines.
-
-## Musk\'s Razor
-
-The current 6,000+ lines produce ~500 lines of actual value. Ship the 500 lines.
+6,000+ lines → ~500 lines of actual value. Backend ~400 lines, Frontend ~800 lines. Ship the 500 lines, get users, then earn the right to add complexity.
