@@ -1,13 +1,12 @@
 {
   "name": "flower-backend",
   "version": "1.0.0",
-  "description": "花语心选 - AI鲜花推荐后端服务",
+  "description": "AI flower recommendation backend",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
-    "init-db": "ts-node src/scripts/init-db.ts"
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -16,7 +15,6 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "ioredis": "^5.3.2",
     "express-rate-limit": "^7.1.4"
   },
   "devDependencies": {

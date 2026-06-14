@@ -1,46 +1,31 @@
-# 花语助手 - 智能花束推荐应用
+# 花语助手 - AI花束推荐
 
-AI 驱动的花束定制推荐应用，基于收花人画像、场景和关系背景提供个性化花束方案。
+AI驱动的花束推荐应用。输入收花人信息和场景，获得个性化花束方案。
 
 ## 项目结构
 
 ```
-├── app/          # HarmonyOS 前端应用 (ArkTS)
-└── backend/      # Node.js 后端服务 (Express + TypeScript)
+├── app/          # HarmonyOS 前端 (ArkTS)
+└── backend/      # Node.js 后端 (Express + TypeScript)
 ```
+
+## 核心流程
+
+1. 输入：收花人姓名 + 关系 + 送花场景 + 补充说明（可选）
+2. AI生成：3套花束方案，含花材搭配、花语解读、贺卡文案
+3. 浏览：花材库浏览（颜色/类别筛选）
 
 ## 技术栈
 
-### 前端 (app/)
-- HarmonyOS / ArkTS
-- @ohos.net.http 网络请求
-- @ohos.data.preferences 本地持久化
-- Tab 导航 + 自定义组件体系
-
-### 后端 (backend/)
-- Node.js + Express + TypeScript
-- PostgreSQL 数据库
-- Redis 缓存
-- 通义千问 AI 推荐引擎
-- JWT 认证
-
-## 功能模块
-
-- 智能花束推荐（5 步引导式问卷 + AI 生成 3 套方案）
-- 花材库浏览（颜色/类别/季节筛选）
-- 收花人画像管理
-- 购物车 + 订单管理
-- 用户注册登录
+- **前端**: HarmonyOS / ArkTS
+- **后端**: Node.js + Express + TypeScript + PostgreSQL
+- **AI**: 通义千问 (qwen-plus)
 
 ## 启动
 
-### 后端
 ```bash
 cd backend
-cp .env.example .env  # 配置数据库和 API 密钥
+cp .env.example .env
 npm install
 npm run dev
 ```
-
-### 前端
-使用 DevEco Studio 打开 `app/` 目录，连接设备或模拟器运行。
