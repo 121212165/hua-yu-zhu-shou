@@ -7,3 +7,11 @@ export const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { code: 429, message: 'Too many auth attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
